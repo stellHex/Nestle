@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+  <script src="https://d3js.org/d3-color.v1.min.js"></script>
+  <script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
+  <script src="https://d3js.org/d3-ease.v1.min.js"></script>
+  <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+  <script src="https://d3js.org/d3-selection.v1.min.js"></script>
+  <script src="https://d3js.org/d3-timer.v1.min.js"></script>
+  <script src="https://d3js.org/d3-transition.v1.min.js"></script>
+  <script src="https://d3js.org/d3-drag.v1.min.js"></script>
+  <script src="https://d3js.org/d3-zoom.v1.min.js"></script>
+  <script src="https://d3js.org/d3-array.v1.min.js"></script>
+  <script src="https://d3js.org/d3-format.v1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.js"></script>
+  
+  <style>
+  html {
+    background-color: #e0e8e0;
+  }
+  body {
+    margin: 0;
+  }
+
+  .button-holder {
+    display: grid;
+    grid-auto-flow: column;
+    grid-template-rows: 100px;
+    grid-column-gap: 20px;
+    justify-items: center;
+    align-items: center;
+    justify-content: space-evenly;
+
+    padding: 0 20px 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    transform-origin: 0 100%;
+    transform: scale(0.75, 0.75);
+    background-color: #888d;
+    border-top-right-radius: 45px;
+    -webkit-transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 1.5s;
+    transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 1.5s;
+    opacity: 0;
+  }
+  .button-holder:hover {
+    transition: opacity 0s;
+    opacity: 1;
+  }
+
+  .button-divider {
+    background-color: #666d;
+    height: 70px;
+    width: 3px;
+  }
+
+  .button-wrapper {
+    height: 70px;
+    width: 70px;
+    position: relative;
+  }
+  .button {
+    background-image: -webkit-linear-gradient(top, #f4f1ee, #fff);
+    background-image: linear-gradient(top, #f4f1ee, #fff);
+    border-radius: 50%;
+    box-shadow: 0px 8px 10px 0px rgba(0, 0, 0, .3),
+      inset 0px 4px 1px 1px white,
+      inset 0px -3px 1px 1px rgba(204,198,197,.5);
+    display: block;
+    position: relative;
+    height: 70px;
+    width: 70px;
+    -webkit-transition: all .1s linear;
+    transition: all .1s linear;
+    /* opacity: 0.75; */
+  }
+
+  .button:after {
+    color:#d9d6d4;
+    content: "";
+    display: block;
+    font-weight: bold;
+    font-size: 35px;
+    height: 35px;
+    text-decoration: none;
+    text-shadow: 0px -1px 1px #bdb5b4, 1px 1px 1px white;
+    position: absolute;
+    width: 35px;
+  }
+  .button.bigger-text:after {
+    font-size: 40px
+  }
+
+  .tooltip-holder {
+    height: 0;
+    z-index: 999;
+    position: absolute;
+    left: 50%;
+  }
+  .button-wrapper:not(:hover) .tooltip-holder {
+    -webkit-transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 0s, visibility 0s 0.5s;
+    transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 0s, visibility 0s 0.5s;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .button-wrapper:hover ~ .button-wrapper:not(:hover) .tooltip-holder {
+    -webkit-transition: none;
+    transition: none;
+  }
+  .tooltip {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-auto-rows: auto;
+    grid-row-gap: 8px;
+    grid-column-gap: 8px;
+    justify-content: center;
+  
+    width: fit-content;
+    color: white;
+    background-color: #000e;
+    border-radius: 8px;
+    top: 0px;
+    transform: translate(0, calc(-100% - 60px)) scale(1.33, 1.33);
+    transform-origin: 50% 100%;
+    height: fit-content;
+    padding: 5px 10px 5px;
+    position: relative;
+    left: -50%;
+    font-family: sans-serif;
+  }
+  .tooltip > span {
+    margin-left: auto
+  }
+  .tooltip > input {
+    max-width: 75px
+  }
+  .mode-choice {
+    grid-column-end: span 2;
+    margin: 0 auto;
+    font-weight: bold;
+  }
+  /* for jscolor */
+  .tooltip > :last-child:not(.mode-choice) {
+    position: absolute !important;
+    left: 100% !important;
+    top: unset !important;
+    bottom: 0 !important;
+  }
+
+  #clockwise .button:after {
+    content: "↻";
+    left: 21px;
+    top: 16px;
+  }
+  #counterclockwise .button:after {
+    content: "↺";
+    left: 21px;
+    top: 16px;
+  }
+  #zoom-out .button:after {
+    content: "−";
+    left: 23px;
+    top: 14px;
+  }
+  #zoom-in .button:after {
+    content: "+";
+    left:23px;
+    top:13px;
+  }
+  #background .button:after {
+    content: "▨";
+    left:18px;
+    top:13px;
+  }
+  #clip .button:after {
+    content: "⬚";
+    left:17px;
+    top:7px;
+  }
+  #copy .button:after {
+    content: "🎨";
+    left:12px;
+    top:10px;
+  }
+  #cut .button:after {
+    content: "◫";
+    left:18px;
+    top:13px;
+  }
+  #download .button:after {
+    content: "💾";
+    left:12px;
+    top:10px;
+  }
+
+  .button:hover {
+    background-image: -webkit-linear-gradient(top, #fff, #f4f1ee);
+    background-image: linear-gradient(top, #fff, #f4f1ee);
+    color:#0088cc;
+  }
+  .button:hover:after {
+    color:#6a6;
+    text-shadow:0px 0px 6px #6a6;
+  }
+  .button:active {
+    background-image: -webkit-linear-gradient(top, #efedec, #f7f4f4);
+    background-image: linear-gradient(top, #efedec, #f7f4f4);
+    box-shadow: 0 3px 5px 0 rgba(0,0,0,.4), inset 0px -3px 1px 1px rgba(204,198,197,.5);
+  }
+  .button:active:after {
+    color:#dbd2d2;
+    text-shadow: 0px -1px 1px #bdb5b4, 0px 1px 1px white;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+  </style>
+
+  <svg height="0" width="0" class="hidden">
+    <filter id="hue-rotate">
+      <feColorMatrix in="SourceGraphic" type="matrix" id="hue-rotate-matrix" color-interpolation-filters="sRGB" />
+    </filter>
+  </svg>
+
+</head>
+<body>
+
+<canvas width="1280" height="640" style="width:100%;"></canvas>
+
+<div class="button-holder">
+  <div class="button-wrapper" id="zoom-out"><a href="#" class="button bigger-text"></a></div>
+  <div class="button-wrapper" id="zoom-in"><a href="#" class="button bigger-text"></a></div>
+  <div class="button-wrapper" id="clockwise"><a href="#" class="button"></a></div>
+  <div class="button-wrapper" id="counterclockwise"><a href="#" class="button"></a></div>
+  <div class="button-divider"></div>
+  <div class="button-wrapper" id="background"><a href="#" class="mode button bigger-text"></a></div>
+  <div class="button-wrapper" id="clip"><a href="#" class="mode button bigger-text"></a></div>
+  <div class="button-wrapper" id="copy"><a href="#" class="mode button"></a></div>
+  <div class="button-wrapper" id="cut"><a href="#" class="mode button bigger-text"></a></div>
+  <div class="button-divider"></div>
+  <div class="button-wrapper" id="download"><a href="#" class="button"></a></div>
+</div>
+
+<script id="utils">
+/* eslint-disable no-unused-vars */
+
+let pi = Math.PI
+
+let timeLog = false
+let timeouts = []
+let removeTimeout = id => {
+  let i = timeouts.indexOf(id)
+  if (i < 0) {
+    if (timeLog) console.log(timeouts, 'NO SUCH', id)
+  } else {
+    if (timeLog) console.log(timeouts, '-', id)
+    timeouts.splice(i, 1)
+  }
+}
+let ogSetTimeout = setTimeout
+let ogClearTimeout = clearTimeout
+setTimeout = function (f, t, ...args) { // eslint-disable-line no-global-assign
+  let id = ogSetTimeout((...args) => { f(...args); removeTimeout(id) }, t, ...args)
+  if (timeLog) console.log(timeouts, '+TIMEOUT', id, f.name)
+  timeouts.push(id)
+  return id
+}
+clearTimeout = function (id) { // eslint-disable-line no-global-assign
+  ogClearTimeout(id)
+  if (timeLog) console.log(timeouts, '-TIMEOUT', id)
+  removeTimeout(id)
+}
+let ogSetInterval = setInterval
+let ogClearInterval = clearInterval
+setInterval = function (f, t, ...args) { // eslint-disable-line no-global-assign
+  let id = ogSetInterval(f, t, ...args)
+  if (timeLog) console.log(timeouts, '+INTERVAL', id, f.name)
+  timeouts.push(id)
+  return id
+}
+clearInterval = function (id) { // eslint-disable-line no-global-assign
+  ogClearInterval(id)
+  if (timeLog) console.log(timeouts, '-INTERVAL', id)
+  removeTimeout(id)
+}
+
+function Transform (k, x, y) {
+  this.k = k
+  this.x = x
+  this.y = y
+}
+Transform.prototype = {
+  constructor: Transform,
+  scale: function (k) {
+    return k === 1 ? this : new Transform(this.k * k, this.x, this.y)
+  },
+  translate: function (x, y) {
+    return x === 0 & y === 0 ? this : new Transform(this.k, this.x + this.k * x, this.y + this.k * y)
+  },
+  apply: function (point) {
+    return [point[0] * this.k + this.x, point[1] * this.k + this.y]
+  },
+  applyX: function (x) {
+    return x * this.k + this.x
+  },
+  applyY: function (y) {
+    return y * this.k + this.y
+  },
+  invert: function (location) {
+    return [(location[0] - this.x) / this.k, (location[1] - this.y) / this.k]
+  },
+  invertX: function (x) {
+    return (x - this.x) / this.k
+  },
+  invertY: function (y) {
+    return (y - this.y) / this.k
+  },
+  rescaleX: function (x) {
+    return x.copy().domain(x.range().map(this.invertX, this).map(x.invert, x))
+  },
+  rescaleY: function (y) {
+    return y.copy().domain(y.range().map(this.invertY, this).map(y.invert, y))
+  },
+  toString: function () {
+    return 'translate(' + this.x + ',' + this.y + ') scale(' + this.k + ')'
+  }
+}
+
+// shoutout to https://stackoverflow.com/a/40622969
+function hueRotate (rotation) {
+  rotation = (rotation || 0) / 180 * Math.PI
+  let cosR = Math.cos(rotation)
+  let sinR = Math.sin(rotation)
+  let sqrt = Math.sqrt
+
+  let w = 1 / 3
+
+  let sqrW = sqrt(w)
+  let a00 = cosR + (1.0 - cosR) * w
+  let a01 = w * (1.0 - cosR) - sqrW * sinR
+  let a02 = w * (1.0 - cosR) + sqrW * sinR
+  let a10 = w * (1.0 - cosR) + sqrW * sinR
+  let a11 = cosR + w * (1.0 - cosR)
+  let a12 = w * (1.0 - cosR) - sqrW * sinR
+  let a20 = w * (1.0 - cosR) - sqrW * sinR
+  let a21 = w * (1.0 - cosR) + sqrW * sinR
+  let a22 = cosR + w * (1.0 - cosR)
+  let matrix = [
+    a00, a01, a02, 0, 0,
+    a10, a11, a12, 0, 0,
+    a20, a21, a22, 0, 0,
+    0, 0, 0, 1, 0
+  ]
+  return matrix.join(' ')
+}
+
+function compose (...operations) {
+  return function () {
+    for (let i in operations) {
+      operations[i]()
+    }
+  }
+}
+
+let imageElements = {}
+function getImage (url) {
+  if (imageElements[url]) return imageElements[url]
+  imageElements[url] = document.createElement('img')
+  imageElements[url].src = url
+  return imageElements[url]
+}
+</script>
+
+<script id="main">
+
+/* globals d3 pi Transform compose hueRotate jscolor getImage XMLHttpRequest */
+let windowWidth, windowHeight
+let doc = d3.select('html')
+
+// ================ //
+//  LANDSCAPE ONLY  //
+// ================ //
+
+orientation.stop = () => clearTimeout(orientation.timeout)
+orientation()
+
+// =========== //
+//  MAIN CAST  //
+// =========== //
+
+let zoomSpeed = 1 / 8
+let panSpeed = 1 / 4
+
+let zoomCache
+let slowZoom = true
+
+let drawInterval = 20
+let drawTimeout = -1
+
+let colorCache = 0
+
+let angle = pi / 6
+let rotSpeed = 1 * pi / 180
+
+let canvas = d3.select('canvas')
+let ctx = canvas.node().getContext('2d')
+ctx.fillStyle = '#fff'
+
+let w = canvas.property('width')
+let h = canvas.property('height')
+
+let zoom = d3.zoom()
+  .scaleExtent([0.3, 1])
+  .on('zoom', zoomed)
+  .on('end start', () => { zoomCache = copyTf(d3.zoomTransform(canvas.node())) })
+canvas.call(zoom)
+canvas.node().__zoom = new Transform(0.8, 572.4, 363.95)
+
+// ======= //
+//  MODES  //
+// ======= //
+
+// this is the main control object
+let modes = {}
+// horrible pseudo-functional programming quasi-constructor hackery, sorry
+// I only want to write these things once, OK?
+function wrapMode (name, mode) {
+  mode.$keys = Object.keys(mode)
+  mode.$name = name
+  mode.$current = null
+  mode.$keys.forEach(key => {
+    let choice = mode[key]
+    let argSpec = []
+    ;(/\(.*?\)/s).exec(choice.toString())[0]
+      .replace(/(\w+)\s*=\s*(?:(-?\s*\d+\.?\d*)|['"](#[^'"]*)["']|["']([^'"]*)["']|(true|(?=false)))/g,
+        (_, name, number, color, string, bool) => {
+          argSpec.push({ name, number, color, string, bool })
+        })
+    mode[key] = function (...args) {
+      mode.$current = { key, choice, args, argSpec, i: mode.$keys.indexOf(key) }
+      choice(...args)
+      updateModeChoice(mode.$name)
+    }
+  })
+  return mode
+}
+
+let copyCanvas = d3.select(document.createElement('canvas'))
+  .property('width', w)
+  .property('height', h)
+let copyCtx = copyCanvas.node().getContext('2d')
+copyCtx.imageSmoothingEnabled = false
+let copy = function () {}
+modes.copy = wrapMode('copy', {
+  preserve () {
+    copy = function () {
+      copyCtx.clearRect(0, 0, w, h)
+      copyCtx.drawImage(canvas.node(), 0, 0)
+    }
+  },
+  invert (amount = 100) {
+    copy = function () {
+      copyCtx.save()
+      copyCtx.clearRect(0, 0, w, h)
+      copyCtx.filter = `invert(${amount}%)`
+      copyCtx.drawImage(canvas.node(), 0, 0)
+      copyCtx.restore()
+    }
+  },
+  brightness (amount = -5) {
+    copy = function () {
+      copyCtx.save()
+      copyCtx.clearRect(0, 0, w, h)
+      copyCtx.filter = `brightness(${100 + amount}%)`
+      copyCtx.drawImage(canvas.node(), 0, 0)
+      copyCtx.restore()
+    }
+  },
+  hueRotate (angle = 10) {
+    d3.select('#hue-rotate-matrix').attr('values', hueRotate(angle))
+    copy = function () {
+      copyCtx.save()
+      copyCtx.clearRect(0, 0, w, h)
+      copyCtx.filter = `url(#hue-rotate)`
+      copyCtx.drawImage(canvas.node(), 0, 0)
+      copyCtx.restore()
+    }
+  },
+  burn (setBackground = false) {
+    if (setBackground) {
+      modes.background.$current.args[0] = ('#311')
+      refreshModeChoice('background')
+    }
+    copy = function () {
+      copyCtx.save()
+      copyCtx.clearRect(0, 0, w, h)
+      copyCtx.filter = `hue-rotate(2deg) brightness(1.1)`
+      copyCtx.drawImage(canvas.node(), 0, 0)
+      copyCtx.restore()
+    }
+  }
+})
+
+let cutCanvas = d3.select(document.createElement('canvas'))
+let cutCtx = cutCanvas.node().getContext('2d')
+let cut = function () {}
+modes.cut = wrapMode('cut', {
+  none () {
+    cut = function () {}
+  },
+  vertical () {
+    cutCanvas.property('height', h)
+    cutCanvas.property('width', w / 2)
+    cut = function () {
+      ctx.clearRect(w / 2, 0, w / 2, h)
+      ctx.save()
+      cutCtx.drawImage(canvas.node(), 0, 0)
+      ctx.translate(w, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(cutCanvas.node(), 0, 0)
+      ctx.restore()
+    }
+  },
+  horizontal () {
+    cutCanvas.property('height', h / 2)
+    cutCanvas.property('width', w)
+    cut = function () {
+      ctx.clearRect(0, h / 2, w, h / 2)
+      ctx.save()
+      cutCtx.drawImage(canvas.node(), 0, 0)
+      ctx.translate(0, h)
+      ctx.scale(1, -1)
+      ctx.drawImage(cutCanvas.node(), 0, 0)
+      ctx.restore()
+    }
+  },
+  quadrants () {
+    cutCanvas.property('height', h / 2)
+    cutCanvas.property('width', w / 2)
+    cut = function () {
+      ctx.clearRect(w / 2, 0, w / 2, h / 2)
+      ctx.clearRect(0, h / 2, w, h / 2)
+      ctx.save()
+      cutCtx.drawImage(canvas.node(), 0, 0)
+
+      ctx.translate(w, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(cutCanvas.node(), 0, 0)
+
+      ctx.translate(0, h)
+      ctx.scale(1, -1)
+      ctx.drawImage(cutCanvas.node(), 0, 0)
+
+      ctx.translate(w, 0)
+      ctx.scale(-1, 1)
+      ctx.drawImage(cutCanvas.node(), 0, 0)
+
+      ctx.restore()
+    }
+  }
+})
+
+function wrapClip (path) {
+  return function () {
+    copyCtx.restore()
+    copyCtx.clearRect(0, 0, w, h)
+    copyCtx.save()
+    copyCtx.beginPath()
+    path()
+    copyCtx.clip()
+  }
+}
+modes.clip = wrapMode('clip', {
+  rectangle: () => copyCtx.restore(),
+  ellipse: wrapClip(() => copyCtx.ellipse(w / 2, h / 2, w / 2, h / 2, 0, 0, pi * 2)),
+  astroid: wrapClip(() => {
+    copyCtx.moveTo(0, 0)
+    copyCtx.quadraticCurveTo(w / 2, h / 2, w, 0)
+    copyCtx.quadraticCurveTo(3 * w / 4, h / 2, w, h)
+    copyCtx.quadraticCurveTo(w / 2, h / 2, 0, h)
+    copyCtx.quadraticCurveTo(w / 4, h / 2, 0, 0)
+  })
+})
+
+let background = function () {}
+let bgParts = {
+  solid (background) {
+    return function () {
+      ctx.save()
+      ctx.fillStyle = background
+      ctx.fillRect(0, 0, w, h)
+      ctx.restore()
+    }
+  },
+  border (line, thickness, margin) {
+    let distance = margin + thickness / 2
+    return function () {
+      ctx.save()
+      ctx.strokeStyle = line
+      ctx.lineWidth = thickness
+      ctx.beginPath()
+      ctx.rect(distance, distance, w - distance * 2, h - distance * 2)
+      ctx.stroke()
+      ctx.restore()
+    }
+  },
+  cross (line, thickness) {
+    return function () {
+      ctx.save()
+      ctx.strokeStyle = line
+      ctx.lineWidth = thickness
+      ctx.beginPath()
+      ctx.moveTo(0, 0); ctx.lineTo(w, h)
+      ctx.moveTo(0, h); ctx.lineTo(w, 0)
+      ctx.stroke()
+      ctx.restore()
+    }
+  },
+  image (url, x, y, width, stretch, height) {
+    let image = getImage(url)
+    return function () {
+      let nw = image.naturalWidth || 1
+      let nh = image.naturalHeight || 1
+      height = stretch ? height : width / nw * nh
+      ctx.drawImage(image, x, y, width, height)
+      ctx.restore()
+    }
+  }
+}
+modes.background = wrapMode('background', {
+  solid (backgroundColor = '#fff') { background = bgParts.solid(backgroundColor) },
+  border (backgroundColor = '#fff', color = '#f00', thickness = 16, margin = 16) {
+    background = compose(
+      bgParts.solid(backgroundColor),
+      bgParts.border(color, thickness, margin)
+    )
+  },
+  cross (backgroundColor = '#fff', color = '#f00', thickness = 16) {
+    background = compose(
+      bgParts.solid(backgroundColor),
+      bgParts.cross(color, thickness)
+    )
+  },
+  rainbow (backgroundColor = '#fff') {
+    let b = (color, margin) => bgParts.border(color, 16, margin * 16)
+    background = compose(
+      bgParts.solid(backgroundColor),
+      b('#f00', 0),
+      b('orange', 1),
+      b('yellow', 2),
+      b('green', 3),
+      b('blue', 4),
+      b('indigo', 5),
+      b('violet', 6)
+    )
+  },
+  image (
+    backgroundColor = '#fff',
+    url = 'https://vignette.wikia.nocookie.net/mspaintadventures/images/2/26/Spiral_Sucker.png',
+    x = 0, y = 0, width = 640, stretch = false, height = 640
+  ) {
+    canvas.style('background-color', backgroundColor)
+    background = bgParts.image(url, x, y, width, stretch, height)
+  }
+})
+
+// ========= //
+//  BUTTONS  //
+// ========= //
+
+let buttonTasks = {
+  'zoom-in': function () { zoom.scaleBy(canvas, 1.1) },
+  'zoom-out': function () { zoom.scaleBy(canvas, 0.9) },
+  'clockwise': function () { angle += rotSpeed },
+  'counterclockwise': function () { angle -= rotSpeed },
+  'download': function () {
+    let canvasImage = canvas.node().toDataURL('image/png')
+    let xhr = new XMLHttpRequest()
+    xhr.responseType = 'blob'
+    xhr.onload = function () {
+      let a = document.createElement('a')
+      a.href = window.URL.createObjectURL(xhr.response)
+      a.download = 'nestle.png'
+      a.click()
+    }
+    xhr.open('GET', canvasImage)
+    xhr.send()
+  }
+}
+
+d3.selectAll('.button').on('click.nope contextmenu.nope', function () {
+  d3.event.preventDefault()
+})
+
+d3.selectAll('.button:not(.mode)').each(function () {
+  let interval
+  d3.select(this).on('mousedown.press touchstart.press', function () {
+    d3.event.preventDefault()
+    clearInterval(interval)
+    interval = setInterval(buttonTasks[this.parentElement.id], 50)
+  }).on('mouseup.press mouseleave.press touchend.press touchleave.press touchcancel.press', function () {
+    clearInterval(interval)
+  })
+})
+
+Object.keys(modes).forEach(addModeChoiceTooltip)
+
+d3.selectAll('.button.mode').on('mousedown.press touchstart.press', function () {
+  let modeName = this.parentElement.id
+  d3.event.preventDefault()
+  cycleModeChoice(modeName, d3.event.button === 2)
+})
+
+// ===== //
+//  GO!  //
+// ===== //
+
+modes.copy.invert()
+modes.cut.vertical()
+modes.clip.rectangle()
+modes.background.solid()
+
+keepDrawing()
+
+// =========== //
+//  FUNCTIONS  //
+// =========== //
+
+function orientation () {
+  orientation.stop() // in case it gets started twice or something
+  let newWidth = window.innerWidth
+  let newHeight = window.innerHeight
+  if (!(newWidth === windowWidth && newHeight === windowHeight)) {
+    windowWidth = newWidth; windowHeight = newHeight
+    let rotate = windowHeight > windowWidth
+    if (rotate) {
+      let scale = windowHeight / windowWidth
+      doc.style('transform-origin', '100% 0')
+      doc.style('transform', `scale(${scale}, ${scale}) rotate(90deg) translate(100%, 0px)`)
+    } else {
+      doc.style('transform', '')
+    }
+  }
+  orientation.timeout = setTimeout(orientation, 500)
+}
+
+function zoomed (tf) {
+  tf = tf || d3.event.transform
+  if (!zoomCache) zoomCache = copyTf(tf)
+
+  if (slowZoom) {
+    // let d = (key, f = (x0, x1) => x1 - x0) => f(zoomCache[key], tf[key])
+    // let delta = {x: d('x'), y: d('y'), k: d('k', (x0, x1) => x1 / x0)}
+    let d = key => tf[key] - zoomCache[key]
+    let delta = { k: d('k'), x: d('x'), y: d('y') }
+    // let old = { k: tf.k, x: tf.x, y: tf.y }
+    if (delta.k === 0) {
+      tf = {
+        k: zoomCache.k,
+        x: zoomCache.x + delta.x * panSpeed,
+        y: zoomCache.y + delta.y * panSpeed
+      }
+    } else {
+      tf = {
+        k: zoomCache.k + delta.k * zoomSpeed,
+        x: zoomCache.x + delta.x * zoomSpeed,
+        y: zoomCache.y + delta.y * zoomSpeed
+      }
+      zoomCache = copyTf(tf)
+    }
+
+    canvas.node().__zoom = new Transform(tf.k, tf.x, tf.y)
+    // console.log('x', ...[zoomCache.x, delta.x, old.x, tf.x, d3.zoomTransform(canvas.node()).x].map(format))
+    // console.log('y', ...[zoomCache.y, delta.y, old.y, tf.y, d3.zoomTransform(canvas.node()).y].map(format))
+    // console.log('k', ...[zoomCache.k, delta.k, old.k, tf.k, d3.zoomTransform(canvas.node()).k].map(format))
+  } else {
+    zoomCache = { k: tf.k, x: tf.x, y: tf.y }
+  }
+
+  // draw()
+}
+
+function copyTf (tf) { return { k: tf.k, x: tf.x, y: tf.y } }
+function draw () {
+  let tf = d3.zoomTransform(canvas.node())
+
+  copy()
+
+  ctx.clearRect(0, 0, w, h)
+  background()
+
+  ctx.save()
+  ctx.translate(tf.x, tf.y)
+  ctx.scale(tf.k, tf.k)
+  ctx.rotate(angle)
+  ctx.drawImage(copyCanvas.node(), -w / 2, -h / 2)
+  ctx.restore()
+
+  cutCtx.clearRect(0, 0, w, h)
+  cut()
+}
+
+function keepDrawing () {
+  // drawing twice in a single frame smooths out some motions considerably
+  draw()
+  draw()
+  drawTimeout = setTimeout(keepDrawing, drawInterval)
+}
+function stopDrawing () { // eslint-disable-line no-unused-vars
+  clearTimeout(drawTimeout)
+}
+
+function addModeChoiceTooltip (modeName) {
+  d3.select(`#${modeName}`).append('div')
+    .classed('tooltip-holder', true).append('div')
+    .classed('tooltip', true)
+}
+function cycleModeChoice (modeName, reverse = false) {
+  let mode = modes[modeName]
+  let current = mode.$current
+  let length = mode.$keys.length
+  let index = (current.i + length + 1 - 2 * reverse) % length
+  let choice = mode.$keys[index]
+  mode[choice]()
+  updateModeChoice(modeName)
+}
+function updateModeChoice (modeName) {
+  let mode = modes[modeName]
+  let args = mode.$current.args
+  let argSpec = mode.$current.argSpec
+  d3.selectAll(`#${modeName} .tooltip > *`)
+    .each(function () { if (this._jscLinkedInstance) this._jscLinkedInstance.hide() })
+    .remove()
+  let wrapper = d3.select(`#${modeName} .tooltip`)
+  // update pattern, shmupdate pattern
+  argSpec.forEach((arg, i) => {
+    wrapper.append('span').text(arg.name)
+    let hasArg = args[i] != null
+    let el
+    if (arg.number != null) {
+      el = wrapper.append('input')
+        .attr('type', 'number')
+        .attr('value', hasArg ? +args[i] : arg.number)
+    } else if (arg.color) {
+      el = wrapper.append('input')
+        .attr('type', 'text')
+        .attr('value', hasArg ? args[i] : arg.color)
+      /* eslint-disable no-new */
+      new jscolor(el.node(), { // eslint-disable-line new-cap
+        container: wrapper.node(),
+        hash: true,
+        position: 'top',
+        backgroundColor: '#000e',
+        borderWidth: 0
+      })
+      /* eslint-enable no-new */
+    } else if (arg.string != null) {
+      el = wrapper.append('input')
+        .attr('type', 'text')
+        .attr('value', hasArg ? args[i] : arg.string)
+    } else {
+      el = wrapper.append('input')
+        .attr('type', 'checkbox')
+        .attr('checked', hasArg ? args[i] : arg.bool || null)
+    }
+
+    el.on('change', function () {
+      args[i] = arg.number != null ? +this.value : arg.color || arg.string ? this.value : this.checked
+      refreshModeChoice(modeName)
+    })
+  })
+  wrapper.append('div')
+    .text(mode.$current.key)
+    .classed('mode-choice', true)
+}
+function refreshModeChoice (modeName) {
+  let current = modes[modeName].$current
+  current.choice(...current.args)
+}
+</script>
+
+</body>
