@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <head>
+  <title>Nestle</title>
+
   <script src="https://d3js.org/d3-color.v1.min.js"></script>
   <script src="https://d3js.org/d3-dispatch.v1.min.js"></script>
   <script src="https://d3js.org/d3-ease.v1.min.js"></script>
@@ -15,12 +17,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jscolor/2.0.4/jscolor.js"></script>
   
   <style>
-  html {
-    background-color: #e0e8e0;
-  }
-  body {
-    margin: 0;
-  }
+  html { background-color: #e0e8e0; }
+  body { margin: 0; }
 
   .button-holder {
     display: grid;
@@ -43,7 +41,7 @@
     transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 1.5s;
     opacity: 0;
   }
-  .button-holder:hover {
+  .button-holder/*:hover*/ {
     transition: opacity 0s;
     opacity: 1;
   }
@@ -74,36 +72,21 @@
     transition: all .1s linear;
     /* opacity: 0.75; */
   }
-
-  .button:after {
-    color:#d9d6d4;
-    content: "";
-    display: block;
-    font-weight: bold;
-    font-size: 35px;
-    height: 35px;
-    text-decoration: none;
-    text-shadow: 0px -1px 1px #bdb5b4, 1px 1px 1px white;
-    position: absolute;
-    width: 35px;
-  }
-  .button.bigger-text:after {
-    font-size: 40px
-  }
-
+  
   .tooltip-holder {
     height: 0;
     z-index: 999;
     position: absolute;
     left: 50%;
   }
-  .button-wrapper:not(:hover) .tooltip-holder {
+  .button-wrapper:not(:hover):not(:active) .tooltip-holder {
     -webkit-transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 0s, visibility 0s 0.5s;
     transition: opacity 0.5s cubic-bezier(0.75, 0, 1, 1) 0s, visibility 0s 0.5s;
     opacity: 0;
     visibility: hidden;
   }
-  .button-wrapper:hover ~ .button-wrapper:not(:hover) .tooltip-holder {
+  .button-wrapper:active ~ .button-wrapper:not(:hover):not(:active) .tooltip-holder,
+  .button-wrapper:hover ~ .button-wrapper:not(:hover):not(:active) .tooltip-holder {
     -webkit-transition: none;
     transition: none;
   }
@@ -132,7 +115,7 @@
     margin-left: auto
   }
   .tooltip > input {
-    max-width: 75px
+    max-width: 100px
   }
   .mode-choice {
     grid-column-end: span 2;
@@ -147,69 +130,106 @@
     bottom: 0 !important;
   }
 
-  #clockwise .button:after {
-    content: "↻";
-    left: 21px;
-    top: 16px;
+  .button::before, .button::after {
+    --color:#d9d6d4; /* hsl(24, 6.17%, 84.12%) */ 
+    display: block;
+    height: 28px; width: 28px;
+    /* use bottom and right so that they can be auto-overridden by top and left */
+    bottom: 15px; right: 15px;
+    border: solid 6px var(--color);
+    position: absolute;
   }
-  #counterclockwise .button:after {
-    content: "↺";
-    left: 21px;
-    top: 16px;
-  }
-  #zoom-out .button:after {
-    content: "−";
-    left: 23px;
-    top: 14px;
-  }
-  #zoom-in .button:after {
-    content: "+";
-    left:23px;
-    top:13px;
-  }
-  #background .button:after {
-    content: "▨";
-    left:18px;
-    top:13px;
-  }
-  #clip .button:after {
-    content: "⬚";
-    left:17px;
-    top:7px;
-  }
-  #copy .button:after {
-    content: "🎨";
-    left:12px;
-    top:10px;
-  }
-  #cut .button:after {
-    content: "◫";
-    left:18px;
-    top:13px;
-  }
-  #download .button:after {
-    content: "💾";
-    left:12px;
-    top:10px;
-  }
-
+  
   .button:hover {
     background-image: -webkit-linear-gradient(top, #fff, #f4f1ee);
     background-image: linear-gradient(top, #fff, #f4f1ee);
-    color:#0088cc;
-  }
-  .button:hover:after {
-    color:#6a6;
-    text-shadow:0px 0px 6px #6a6;
   }
   .button:active {
     background-image: -webkit-linear-gradient(top, #efedec, #f7f4f4);
     background-image: linear-gradient(top, #efedec, #f7f4f4);
     box-shadow: 0 3px 5px 0 rgba(0,0,0,.4), inset 0px -3px 1px 1px rgba(204,198,197,.5);
   }
-  .button:active:after {
-    color:#dbd2d2;
-    text-shadow: 0px -1px 1px #bdb5b4, 0px 1px 1px white;
+  .button:hover::after, .button:hover::before { --color: #6a6; } /* hsl(120, 28.57%, 53.33%) */
+  .button:active::after, .button:active::before { --color: #d9d6d4; }
+
+  #zoom-out .button::before, #zoom-in .button::before, #zoom-in .button::after {
+    content: "";
+    border: none; width: 40px;
+    height: 6px; top: 32.5px;
+    background-color: var(--color);
+  }
+  #zoom-in .button::after { transform: rotate(90deg) }
+  
+  #clockwise .button::before, #counterclockwise .button::before {
+    content: "";
+    border-top-color: transparent;
+    border-radius: 9999px;
+  }
+  #clockwise .button::before { transform: rotate(135deg); }
+  #counterclockwise .button::before { transform: rotate(-135deg); }
+  #clockwise .button::after, #counterclockwise .button::after {
+    content: "";
+    height: 0px; width: 0px; top: 25px;
+    border: solid 8px var(--color);
+    border-top-color: transparent; border-left-color: transparent;
+  }
+  #clockwise .button::after { right: 11px; transform: rotate(45deg); }
+  #counterclockwise .button::after { left: 11px; transform: rotate(45deg); }
+
+  #background .button::before {
+    content: "";
+    background-image: repeating-linear-gradient(-45deg,
+      transparent -1.8px 4.2px,
+      var(--color) 4.2px 10.2px
+    );
+  }
+
+  #clip .button::before {
+    content: "";
+    border-style: dotted;
+  }
+
+  #copy .button::before, #copy .button::after {
+    content: "";
+    --h: 24; --s: 6.17%; --l: 75.71%;
+  }
+  #copy .button:hover::after, #copy .button:hover::before { --h: 120; --s: 28.57%; --l: 53.33%; }
+  #copy .button:active::after, #copy .button:active::before { --h: 24; --s: 6.17%; --l: 75.71%; }
+  #copy .button::before {
+    height: 28px;
+    background-color: hsl(calc(var(--h) + 30), var(--s), calc(var(--l) * 1.15));
+  }
+  #copy .button::after {
+    height: 6px; width: 6px;
+    left: 27px; top: 27px;
+    border-width: 5px;
+    border-color: hsl(calc(var(--h) + 30 * 2), var(--s), calc(var(--l) * 1.2));
+    background-color: hsl(calc(var(--h) + 30 * 3), var(--s), calc(var(--l) * 1.25));
+  }
+
+  #cut .button::before {
+    content: "";
+    border-right: dashed 3.5px var(--color);
+    width: 11.5px;
+    left: 15px
+  }
+  #cut .button::after {
+    content: "";
+    border-left: dashed 3.5px var(--color);
+    width: 11.5px;
+  }
+  #download .button::before {
+    content: "";
+    border: none; width: 40px;
+    height: 10px; top: 20px;
+    background-color: var(--color);
+  }
+  #download .button::after {
+    content: "";
+    height: 0px; width: 0px; top: 21px; left: 21px;
+    border: solid 14px var(--color);
+    border-top-color: transparent; border-left-color: transparent;
+    transform: rotate(45deg);
   }
 
   .hidden {
@@ -229,20 +249,21 @@
 <canvas width="1280" height="640" style="width:100%;"></canvas>
 
 <div class="button-holder">
-  <div class="button-wrapper" id="zoom-out"><a href="#" class="button bigger-text"></a></div>
-  <div class="button-wrapper" id="zoom-in"><a href="#" class="button bigger-text"></a></div>
+  <div class="button-wrapper" id="zoom-out"><a href="#" class="button"></a></div>
+  <div class="button-wrapper" id="zoom-in"><a href="#" class="button"></a></div>
   <div class="button-wrapper" id="clockwise"><a href="#" class="button"></a></div>
   <div class="button-wrapper" id="counterclockwise"><a href="#" class="button"></a></div>
   <div class="button-divider"></div>
-  <div class="button-wrapper" id="background"><a href="#" class="mode button bigger-text"></a></div>
-  <div class="button-wrapper" id="clip"><a href="#" class="mode button bigger-text"></a></div>
+  <div class="button-wrapper" id="background"><a href="#" class="mode button"></a></div>
+  <div class="button-wrapper" id="clip"><a href="#" class="mode button"></a></div>
   <div class="button-wrapper" id="copy"><a href="#" class="mode button"></a></div>
-  <div class="button-wrapper" id="cut"><a href="#" class="mode button bigger-text"></a></div>
-  <!-- <div class="button-divider"></div>
-  <div class="button-wrapper" id="download"><a href="#" class="button"></a></div> -->
+  <div class="button-wrapper" id="cut"><a href="#" class="mode button"></a></div>
+  <div class="button-divider"></div>
+  <div class="button-wrapper" id="download"><a href="#" class="button"></a></div>
 </div>
 
 <script id="utils">
+/* globals d3 */
 /* eslint-disable no-unused-vars */
 
 let pi = Math.PI
@@ -364,10 +385,29 @@ function compose (...operations) {
 }
 
 let imageElements = {}
+let warningGiven = false
 function getImage (url) {
   if (imageElements[url]) return imageElements[url]
-  imageElements[url] = document.createElement('img')
-  imageElements[url].src = url
+  let img = imageElements[url] = document.createElement('img')
+  img.src = url
+  img.crossOrigin = 'anonymous'
+  d3.select(img).on('load', () => {
+    let ctx = document.createElement('canvas').getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    try {
+      ctx.getImageData()
+    } catch (e) {
+      if (!warningGiven) {
+        window.alert(`Warning: the image you used was not CORS enabled,${''
+        } which means your browser has become suspicious of your canvas data,${''
+        } and will refuse to download your creations until you refresh the page.${''
+        } You can still take screenshots, though.${'\n'
+        }In the future, you can put the image on a dedicated hosting site,${''
+        } such as imgur, and use that url instead.`)
+        warningGiven = true
+      }
+    }
+  })
   return imageElements[url]
 }
 </script>
@@ -422,7 +462,6 @@ canvas.node().__zoom = new Transform(0.8, 572.4, 363.95)
 // this is the main control object
 let modes = {}
 // horrible pseudo-functional programming quasi-constructor hackery, sorry
-// I only want to write these things once, OK?
 function wrapMode (name, mode) {
   mode.$keys = Object.keys(mode)
   mode.$name = name
@@ -656,6 +695,7 @@ modes.background = wrapMode('background', {
   image (
     backgroundColor = '#fff',
     url = 'https://vignette.wikia.nocookie.net/mspaintadventures/images/2/26/Spiral_Sucker.png',
+    // url = 'https://i.imgur.com/RBcPFa5.png',
     x = 0, y = 0, width = 640, stretch = false, height = 640
   ) {
     canvas.style('background-color', backgroundColor)
