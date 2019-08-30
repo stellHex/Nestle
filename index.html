@@ -395,7 +395,7 @@ function getImage (url) {
     let ctx = document.createElement('canvas').getContext('2d')
     ctx.drawImage(img, 0, 0)
     try {
-      ctx.getImageData()
+      ctx.getImageData(0, 0, w, h)
     } catch (e) {
       if (!warningGiven) {
         window.alert(`Warning: the image you used was not CORS enabled,${''
