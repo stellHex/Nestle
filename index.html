@@ -389,8 +389,8 @@ let warningGiven = false
 function getImage (url) {
   if (imageElements[url]) return imageElements[url]
   let img = imageElements[url] = document.createElement('img')
+  img.crossOrigin = ''
   img.src = url
-  img.crossOrigin = 'anonymous'
   d3.select(img).on('load', () => {
     let ctx = document.createElement('canvas').getContext('2d')
     ctx.drawImage(img, 0, 0)
